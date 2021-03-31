@@ -28,7 +28,9 @@ import { isExpanded } from 'lib/util/DiUtil';
 describe('features/popup-menu - replace menu provider', function() {
 
   var diagramXMLMarkers = require('../../../fixtures/bpmn/draw/activity-markers-simple.bpmn'),
-      diagramXMLReplace = require('../../../fixtures/bpmn/features/replace/01_replace.bpmn');
+      diagramXMLReplace = require('../../../fixtures/bpmn/features/replace/01_replace.bpmn'),
+      diagramXMLDataElements = require('../../../fixtures/bpmn/features/replace/data-elements.bpmn'),
+      diagramXMLParticipants = require('../../../fixtures/bpmn/features/replace/participants.bpmn');
 
   var testModules = [
     coreModule,
@@ -37,17 +39,243 @@ describe('features/popup-menu - replace menu provider', function() {
     customRulesModule
   ];
 
-  var openPopup = function(element, offset) {
-    offset = offset || 100;
 
-    getBpmnJS().invoke(function(popupMenu) {
+  describe('data object - collection marker', function() {
 
-      popupMenu.open(element, 'bpmn-replace', {
-        x: element.x + offset, y: element.y + offset
-      });
+    beforeEach(bootstrapModeler(diagramXMLDataElements, { modules: testModules }));
 
-    });
-  };
+
+    it('should toggle on', inject(function(elementRegistry) {
+
+      // given
+      var dataObjectReference = elementRegistry.get('DataObjectReference_1');
+
+      openPopup(dataObjectReference);
+
+      // when
+      triggerAction('toggle-is-collection');
+
+      openPopup(dataObjectReference);
+
+      var isCollectionMarker = queryEntry('toggle-is-collection');
+
+      // then
+      expect(domClasses(isCollectionMarker).has('active')).to.be.true;
+      expect(dataObjectReference.businessObject.dataObjectRef.isCollection).to.be.true;
+    }));
+
+
+    it('should undo', inject(function(commandStack, elementRegistry) {
+
+      // given
+      var dataObjectReference = elementRegistry.get('DataObjectReference_1');
+
+      openPopup(dataObjectReference);
+
+      triggerAction('toggle-is-collection');
+
+      // when
+      commandStack.undo();
+
+      openPopup(dataObjectReference);
+
+      var isCollectionMarker = queryEntry('toggle-is-collection');
+
+      // then
+      expect(domClasses(isCollectionMarker).has('active')).to.be.false;
+      expect(dataObjectReference.businessObject.dataObjectRef.isCollection).not.to.be.true;
+    }));
+
+
+    it('should redo', inject(function(commandStack, elementRegistry) {
+
+      // given
+      var dataObjectReference = elementRegistry.get('DataObjectReference_1');
+
+      openPopup(dataObjectReference);
+
+      triggerAction('toggle-is-collection');
+
+      commandStack.undo();
+
+      // when
+      commandStack.redo();
+
+      openPopup(dataObjectReference);
+
+      var isCollectionMarker = queryEntry('toggle-is-collection');
+
+      // then
+      expect(domClasses(isCollectionMarker).has('active')).to.be.true;
+      expect(dataObjectReference.businessObject.dataObjectRef.isCollection).to.be.true;
+    }));
+
+
+    it('should toggle off', inject(function(elementRegistry) {
+
+      // given
+      var dataObjectReference = elementRegistry.get('DataObjectReference_1');
+
+      openPopup(dataObjectReference);
+
+      triggerAction('toggle-is-collection');
+
+      openPopup(dataObjectReference);
+
+      // when
+      triggerAction('toggle-is-collection');
+
+      openPopup(dataObjectReference);
+
+      var isCollectionMarker = queryEntry('toggle-is-collection');
+
+      // then
+      expect(domClasses(isCollectionMarker).has('active')).to.be.false;
+      expect(dataObjectReference.businessObject.dataObjectRef.isCollection).to.be.false;
+    }));
+
+
+    it('should activate marker of linked data object reference', inject(function(elementRegistry) {
+
+      // given
+      var dataObjectReference1 = elementRegistry.get('DataObjectReference_1');
+      var dataObjectReference2 = elementRegistry.get('DataObjectReference_2');
+
+      openPopup(dataObjectReference1);
+
+      // when
+      triggerAction('toggle-is-collection');
+
+      openPopup(dataObjectReference2);
+
+      var isCollectionMarker = queryEntry('toggle-is-collection');
+
+      // then
+      expect(domClasses(isCollectionMarker).has('active')).to.be.true;
+    }));
+
+
+    it('should deactivate marker of linked data object reference', inject(function(elementRegistry) {
+
+      // given
+      var dataObjectReference1 = elementRegistry.get('DataObjectReference_1');
+      var dataObjectReference2 = elementRegistry.get('DataObjectReference_2');
+
+      openPopup(dataObjectReference1);
+
+      triggerAction('toggle-is-collection');
+
+      openPopup(dataObjectReference1);
+
+      // when
+      triggerAction('toggle-is-collection');
+
+      openPopup(dataObjectReference2);
+
+      var isCollectionMarker = queryEntry('toggle-is-collection');
+
+      // then
+      expect(domClasses(isCollectionMarker).has('active')).to.be.false;
+    }));
+
+  });
+
+
+  describe('participants - multiplicity marker', function() {
+
+    beforeEach(bootstrapModeler(diagramXMLParticipants, { modules: testModules }));
+
+
+    it('should toggle on', inject(function(elementRegistry) {
+
+      // given
+      var participant = elementRegistry.get('Participant_1');
+
+      openPopup(participant);
+
+      // when
+      triggerAction('toggle-participant-multiplicity');
+
+      openPopup(participant);
+
+      var multiplicityMarker = queryEntry('toggle-participant-multiplicity');
+
+      // then
+      expect(domClasses(multiplicityMarker).has('active')).to.be.true;
+      expect(participant.businessObject.participantMultiplicity).to.exist;
+    }));
+
+
+    it('should undo', inject(function(commandStack, elementRegistry) {
+
+      // given
+      var participant = elementRegistry.get('Participant_1');
+
+      openPopup(participant);
+
+      triggerAction('toggle-participant-multiplicity');
+
+      // when
+      commandStack.undo();
+
+      openPopup(participant);
+
+      var multiplicityMarker = queryEntry('toggle-participant-multiplicity');
+
+      // then
+      expect(domClasses(multiplicityMarker).has('active')).to.be.false;
+      expect(participant.businessObject.participantMultiplicity).not.to.exist;
+    }));
+
+
+    it('should redo', inject(function(commandStack, elementRegistry) {
+
+      // given
+      var participant = elementRegistry.get('Participant_1');
+
+      openPopup(participant);
+
+      triggerAction('toggle-participant-multiplicity');
+
+      commandStack.undo();
+
+      // when
+      commandStack.redo();
+
+      openPopup(participant);
+
+      var multiplicityMarker = queryEntry('toggle-participant-multiplicity');
+
+      // then
+      expect(domClasses(multiplicityMarker).has('active')).to.be.true;
+      expect(participant.businessObject.participantMultiplicity).to.exist;
+    }));
+
+
+    it('should toggle off', inject(function(elementRegistry) {
+
+      // given
+      var participant = elementRegistry.get('Participant_1');
+
+      openPopup(participant);
+
+      triggerAction('toggle-participant-multiplicity');
+
+      openPopup(participant);
+
+      // when
+      triggerAction('toggle-participant-multiplicity');
+
+      openPopup(participant);
+
+      var multiplicityMarker = queryEntry('toggle-participant-multiplicity');
+
+      // then
+      expect(domClasses(multiplicityMarker).has('active')).to.be.false;
+      expect(participant.businessObject.participantMultiplicity).not.to.exist;
+    }));
+
+  });
 
 
   describe('toggle', function() {
@@ -712,70 +940,120 @@ describe('features/popup-menu - replace menu provider', function() {
     });
 
 
-    describe('cancel events', function() {
+    describe('cancel event definition', function() {
 
       var diagramXML = require('../../../fixtures/bpmn/features/replace/cancel-events.bpmn');
 
       beforeEach(bootstrapModeler(diagramXML, { modules: testModules }));
 
-      it('should contain cancel event replace option',
-        inject(function(elementRegistry) {
 
-          // given
-          var endEvent = elementRegistry.get('EndEvent_1');
+      describe('for end events', function() {
 
-          // when
-          openPopup(endEvent);
+        it('should contain cancel event replace option in transaction',
+          inject(function(elementRegistry) {
 
-          // then
-          expect(queryEntries()).to.have.length(9);
-        })
-      );
+            // given
+            var endEvent = elementRegistry.get('EndEvent_3');
 
+            // when
+            openPopup(endEvent);
 
-      it('should NOT contain cancel event replace option',
-        inject(function(elementRegistry) {
+            // then
+            expect(queryEntries()).to.have.length(9);
 
-          // given
-          var endEvent = elementRegistry.get('EndEvent_2');
-
-          // when
-          openPopup(endEvent);
-
-          // then
-          expect(queryEntries()).to.have.length(8);
-        })
-      );
+            expect(queryEntry('replace-with-cancel-end')).to.exist;
+          })
+        );
 
 
-      it('should contain cancel event replace option (boundary events)',
-        inject(function(elementRegistry) {
+        it('should NOT contain cancel event replace option in transaction when already set',
+          inject(function(elementRegistry) {
 
-          // given
-          var boundaryEvent = elementRegistry.get('BoundaryEvent_1');
+            // given
+            var endEvent = elementRegistry.get('EndEvent_1');
 
-          // when
-          openPopup(boundaryEvent);
+            // when
+            openPopup(endEvent);
 
-          // then
-          expect(queryEntries()).to.have.length(13);
-        })
-      );
+            // then
+            expect(queryEntries()).to.have.length(9);
+            expect(queryEntry('replace-with-cancel-end')).to.be.null;
+          })
+        );
 
 
-      it('should NOT contain cancel event replace option (boundary events)',
-        inject(function(elementRegistry) {
+        it('should NOT contain cancel event replace option outside transaction',
+          inject(function(elementRegistry) {
 
-          // given
-          var boundaryEvent = elementRegistry.get('BoundaryEvent_2');
+            // given
+            var endEvent = elementRegistry.get('EndEvent_2');
 
-          // when
-          openPopup(boundaryEvent, 40);
+            // when
+            openPopup(endEvent);
 
-          // then
-          expect(queryEntries()).to.have.length(13);
-        })
-      );
+            // then
+            expect(queryEntries()).to.have.length(8);
+
+            expect(queryEntry('replace-with-cancel-end')).to.be.null;
+          })
+        );
+
+      });
+
+
+      describe('for boundary events', function() {
+
+        it('should contain cancel event replace option attachted to Transaction',
+          inject(function(elementRegistry) {
+
+            // given
+            var boundaryEvent = elementRegistry.get('BoundaryEvent_1');
+
+            // when
+            openPopup(boundaryEvent);
+
+            // then
+            expect(queryEntries()).to.have.length(13);
+
+            expect(queryEntry('replace-with-cancel-boundary')).to.exist;
+          })
+        );
+
+
+        it('should NOT contain cancel event replace option attached to SubProcess',
+          inject(function(elementRegistry) {
+
+            // given
+            var boundaryEvent = elementRegistry.get('BoundaryEvent_2');
+
+            // when
+            openPopup(boundaryEvent);
+
+            // then
+            expect(queryEntries()).to.have.length(12);
+
+            expect(queryEntry('replace-with-cancel-boundary')).to.be.null;
+          })
+        );
+
+
+        it('should NOT contain cancel event replace option attached to Activity',
+          inject(function(elementRegistry) {
+
+            // given
+            var boundaryEvent = elementRegistry.get('BoundaryEvent_3');
+
+            // when
+            openPopup(boundaryEvent);
+
+            // then
+            expect(queryEntries()).to.have.length(12);
+
+            expect(queryEntry('replace-with-cancel-boundary')).to.be.null;
+          })
+        );
+
+      });
 
     });
 
@@ -784,7 +1062,7 @@ describe('features/popup-menu - replace menu provider', function() {
 
       beforeEach(bootstrapModeler(diagramXMLReplace, { modules: testModules }));
 
-      it('should contain all boundary events for an interrupting boundary event',
+      it('should contain all boundary events (except for cancel and currently active) for an interrupting boundary event',
         inject(function(bpmnReplace, elementRegistry) {
 
           // given
@@ -795,12 +1073,13 @@ describe('features/popup-menu - replace menu provider', function() {
 
           // then
           expect(queryEntry('replace-with-conditional-intermediate-catch')).to.be.null;
-          expect(queryEntries()).to.have.length(12);
+          expect(queryEntry('replace-with-cancel-boundary')).to.be.null;
+          expect(queryEntries()).to.have.length(11);
         })
       );
 
 
-      it('should contain all boundary events for a non interrupting boundary event',
+      it('should contain all boundary events (except for cancel and currently active) for a non interrupting boundary event',
         inject(function(bpmnReplace, elementRegistry) {
 
           // given
@@ -811,7 +1090,8 @@ describe('features/popup-menu - replace menu provider', function() {
 
           // then
           expect(queryEntry('replace-with-non-interrupting-message-intermediate-catch')).to.be.null;
-          expect(queryEntries()).to.have.length(12);
+          expect(queryEntry('replace-with-cancel-boundary')).to.be.null;
+          expect(queryEntries()).to.have.length(11);
         })
       );
 
@@ -1039,6 +1319,7 @@ describe('features/popup-menu - replace menu provider', function() {
 
     });
 
+
     describe('collapsed subprocesses', function() {
 
       var diagramXML = require('./ReplaceMenuProvider.collapsedSubProcess.bpmn');
@@ -1062,6 +1343,91 @@ describe('features/popup-menu - replace menu provider', function() {
 
     });
 
+
+    describe('pools', function() {
+
+      var diagramXML = require('./ReplaceMenuProvider.pools.bpmn');
+
+      beforeEach(bootstrapModeler(diagramXML, { modules: testModules }));
+
+
+      it('should indicate removing content', inject(function(elementRegistry) {
+
+        // given
+        var expandedPool = elementRegistry.get('Participant_1');
+
+        // when
+        openPopup(expandedPool);
+
+        var emptyPoolLabel = queryEntryLabel('replace-with-collapsed-pool');
+
+        // then
+        expect(emptyPoolLabel).to.exist;
+        expect(emptyPoolLabel.innerHTML).to.eql('Empty Pool (removes content)');
+      }));
+
+
+      it('should NOT indicate removing content', inject(function(elementRegistry) {
+
+        // given
+        var expandedPool = elementRegistry.get('Participant_2');
+
+        // when
+        openPopup(expandedPool);
+
+        var emptyPoolLabel = queryEntryLabel('replace-with-collapsed-pool');
+
+        // then
+        expect(emptyPoolLabel).to.exist;
+        expect(emptyPoolLabel.innerHTML).to.eql('Empty Pool');
+      }));
+
+    });
+
+
+    describe('data object', function() {
+
+      beforeEach(bootstrapModeler(diagramXMLDataElements, { modules: testModules }));
+
+
+      it('should only contain data store reference', inject(function(elementRegistry) {
+
+        // given
+        var dataObjectReference = elementRegistry.get('DataObjectReference_1');
+
+        // when
+        openPopup(dataObjectReference);
+
+        // then
+        expect(queryEntries()).to.have.length(2);
+        expect(queryEntry('toggle-is-collection')).to.exist;
+        expect(queryEntry('replace-with-data-store-reference')).to.exist;
+        expect(queryEntry('replace-with-data-object-reference')).to.be.null;
+      }));
+    });
+
+
+    describe('data store', function() {
+
+      beforeEach(bootstrapModeler(diagramXMLDataElements, { modules: testModules }));
+
+
+      it('should only contain data object reference', inject(function(elementRegistry) {
+
+        // given
+        var dataStoreReference = elementRegistry.get('DataStoreReference_1');
+
+        // when
+        openPopup(dataStoreReference);
+
+        // then
+        expect(queryEntries()).to.have.length(1);
+        expect(queryEntry('toggle-is-collection')).to.be.null;
+        expect(queryEntry('replace-with-data-store-reference')).to.be.null;
+        expect(queryEntry('replace-with-data-object-reference')).to.exist;
+      }));
+
+    });
 
   });
 
@@ -1942,6 +2308,18 @@ describe('features/popup-menu - replace menu provider', function() {
 
 // helpers ////////////
 
+function openPopup(element, offset) {
+  offset = offset || 100;
+
+  getBpmnJS().invoke(function(popupMenu) {
+
+    popupMenu.open(element, 'bpmn-replace', {
+      x: element.x + offset, y: element.y + offset
+    });
+
+  });
+}
+
 function queryEntry(id) {
   var container = getBpmnJS().get('canvas').getContainer();
 
@@ -1952,6 +2330,12 @@ function queryEntries() {
   var container = getBpmnJS().get('canvas').getContainer();
 
   return domQueryAll('.djs-popup .entry', container);
+}
+
+function queryEntryLabel(id) {
+  var entry = queryEntry(id);
+
+  return domQuery('span', entry);
 }
 
 function triggerAction(id) {

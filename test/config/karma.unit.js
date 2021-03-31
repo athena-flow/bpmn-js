@@ -1,12 +1,14 @@
-/* global process */
-
 var path = require('path');
+
+var collectTranslations = process.env.COLLECT_TRANSLATIONS;
+
+var singleStart = process.env.SINGLE_START;
 
 var coverage = process.env.COVERAGE;
 
 // configures browsers to run test against
 // any of [ 'ChromeHeadless', 'Chrome', 'Firefox', 'IE', 'PhantomJS' ]
-var browsers = (process.env.TEST_BROWSERS || 'PhantomJS').split(',');
+var browsers = (process.env.TEST_BROWSERS || 'ChromeHeadless').split(',');
 
 // use puppeteer provided Chrome for testing
 process.env.CHROME_BIN = require('puppeteer').executablePath();
@@ -19,7 +21,8 @@ var suite = coverage ? 'test/coverageBundle.js' : 'test/testBundle.js';
 
 
 module.exports = function(karma) {
-  karma.set({
+
+  var config = {
 
     basePath,
 
@@ -86,5 +89,18 @@ module.exports = function(karma) {
       },
       devtool: 'eval-source-map'
     }
-  });
+  };
+
+  if (collectTranslations) {
+    config.plugins = [].concat(config.plugins || ['karma-*'], require('./translation-reporter'));
+    config.reporters = [].concat(config.reporters || [], 'translation-reporter');
+    config.envPreprocessor = [].concat(config.envPreprocessor || [], 'COLLECT_TRANSLATIONS');
+  }
+
+  if (singleStart) {
+    config.browsers = [].concat(config.browsers, 'Debug');
+    config.envPreprocessor = [].concat(config.envPreprocessor || [], 'SINGLE_START');
+  }
+
+  karma.set(config);
 };
